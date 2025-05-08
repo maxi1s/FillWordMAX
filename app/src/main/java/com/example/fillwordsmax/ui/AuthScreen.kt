@@ -1,4 +1,4 @@
-package com.fillwordmax.ui
+package com.example.fillwordsmax.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

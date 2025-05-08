@@ -1,4 +1,4 @@
-package com.fillwordmax.auth
+package com.example.fillwordsmax.auth
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
