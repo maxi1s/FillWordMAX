@@ -10,11 +10,13 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AuthScreen(
     onSignIn: (String, String) -> Unit,
-    onSignUp: (String, String) -> Unit
+    onSignUp: (String, String) -> Unit,
+    onAuthSuccess: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isSignUp by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -23,6 +25,12 @@ fun AuthScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Text(
+            text = "FillWord Max",
+            style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier.padding(bottom = 32.dp)
+        )
+
         TextField(
             value = email,
             onValueChange = { email = it },
@@ -38,6 +46,14 @@ fun AuthScreen(
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth()
         )
+        
+        errorMessage?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
         
         Spacer(modifier = Modifier.height(16.dp))
         
