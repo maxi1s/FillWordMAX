@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "70915272821",
+    "project_id": "fillwords-340c4",
+    "storage_bucket": "fillwords-340c4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:70915272821:android:7421a90ab3e652368bc83c",
+        "android_client_info": {
+          "package_name": "com.example.fillwordsmax"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPZEf3peooalngRmBfyY05trS12nS4pTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
