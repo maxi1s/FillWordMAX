@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "70915272821-e86mbmtnu05qsq3fufm5up64ikrnoggu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fillwordsmax",
+            "certificate_hash": "2b0139a634adb81648ccbfeb26bdd29c95aa0279"
+          }
+        },
+        {
           "client_id": "70915272821-762bt8droob8uao693712eg508e5eas1.apps.googleusercontent.com",
           "client_type": 3
         }
