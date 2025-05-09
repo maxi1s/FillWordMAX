@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -190,7 +191,12 @@ fun GameField(
         if (foundWords.size == gameField?.words?.size) {
             isRunning = false
             val stars = calculateStars(elapsedTime)
-            val score = (gameField?.words?.size ?: 0) * stars * 100
+            val maxScore = 100
+            val score = when (stars) {
+                3 -> maxScore
+                2 -> (maxScore * 0.7).toInt()
+                else -> (maxScore * 0.4).toInt()
+            }
             // Сохраняем прогресс
             ProgressRepository.saveLevelProgress(
                 levelId = level.id,
@@ -201,17 +207,28 @@ fun GameField(
                 stars = stars
             )
             // Показываем результат
-            Text(
-                text = "Уровень пройден!\nВремя: ${elapsedTime}s\nЗвезды: ${"★".repeat(stars)}",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFFFA000),
-                modifier = Modifier.padding(top = 16.dp)
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 24.dp)
+            ) {
+                Text("Уровень пройден!", fontWeight = FontWeight.Bold, fontSize = 22.sp)
+                Text("Время: $elapsedTime сек", fontSize = 18.sp)
+                Text("Очки: $score / $maxScore", fontSize = 18.sp)
+                Row {
+                    repeat(3) { i ->
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Звезда",
+                            tint = if (i < stars) Color.Yellow else Color.Gray,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            }
             // Завершаем уровень через 2 секунды
             LaunchedEffect(Unit) {
                 delay(2000)
-                onLevelCompleted(level)
+                onLevelCompleted(level.copy(score = score, time = elapsedTime, stars = stars))
             }
         }
     }

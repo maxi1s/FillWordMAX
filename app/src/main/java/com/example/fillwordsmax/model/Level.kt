@@ -5,7 +5,10 @@ data class Level(
     val name: String,
     val category: String,
     val isLocked: Boolean = true,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val score: Int = 0,
+    val time: Long = 0L,
+    val stars: Int = 0
 )
 
 data class LevelCategory(

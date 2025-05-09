@@ -1,6 +1,7 @@
 package com.example.fillwordsmax
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
@@ -22,6 +23,20 @@ import com.example.fillwordsmax.ui.CategoriesScreen
 import com.example.fillwordsmax.ui.GameScreen
 import com.example.fillwordsmax.ui.LevelsScreen
 import com.example.fillwordsmax.ui.theme.FillWordMaxTheme
+import com.example.fillwordsmax.data.ProgressRepository
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 
 class MainActivity : ComponentActivity() {
     private lateinit var authManager: AuthManager
@@ -57,6 +72,35 @@ fun AppNavigation(authManager: AuthManager) {
         }
     }
 
+    LaunchedEffect(isAuthenticated) {
+        if (isAuthenticated) {
+            ProgressRepository.loadProgress { progressMap ->
+                categories = categories.map { category ->
+                    val updatedLevels = category.levels.map { level ->
+                        progressMap[level.id]?.let { progress ->
+                            level.copy(
+                                isCompleted = progress.isCompleted,
+                                isLocked = progress.isLocked,
+                                score = progress.score,
+                                time = progress.time,
+                                stars = progress.stars
+                            )
+                        } ?: level
+                    }.toMutableList()
+
+                    // Открываем следующий уровень, если предыдущий пройден
+                    for (i in 0 until updatedLevels.size - 1) {
+                        if (updatedLevels[i].isCompleted) {
+                            updatedLevels[i + 1] = updatedLevels[i + 1].copy(isLocked = false)
+                        }
+                    }
+
+                    category.copy(levels = updatedLevels)
+                }
+            }
+        }
+    }
+
     NavHost(navController = navController, startDestination = "auth") {
         composable("auth") {
             AuthScreen(
@@ -78,6 +122,7 @@ fun AppNavigation(authManager: AuthManager) {
                 onSignOut = {
                     authManager.signOut()
                     isAuthenticated = false
+                    categories = createInitialCategories()
                     navController.navigate("auth") {
                         popUpTo("categories") { inclusive = true }
                     }
@@ -121,12 +166,32 @@ fun AppNavigation(authManager: AuthManager) {
                     navController = navController,
                     level = level,
                     onLevelCompleted = { completedLevel ->
-                        // Обновляем статус уровня
+                        val maxScore = 100
+                        val score = when {
+                            completedLevel.stars == 3 -> maxScore
+                            completedLevel.stars == 2 -> (maxScore * 0.7).toInt()
+                            else -> (maxScore * 0.4).toInt()
+                        }
+                        // Сохраняем прогресс в облако
+                        ProgressRepository.saveLevelProgress(
+                            levelId = completedLevel.id,
+                            isCompleted = true,
+                            isLocked = false, // или нужное значение
+                            score = score,
+                            time = completedLevel.time,
+                            stars = completedLevel.stars
+                        )
+                        // Обновляем локально
                         categories = categories.map { category ->
                             if (category.levels.any { it.id == completedLevel.id }) {
                                 category.copy(
                                     levels = category.levels.map { l ->
-                                        if (l.id == completedLevel.id) l.copy(isCompleted = true)
+                                        if (l.id == completedLevel.id) l.copy(
+                                            isCompleted = true,
+                                            score = completedLevel.score,
+                                            time = completedLevel.time,
+                                            stars = completedLevel.stars
+                                        )
                                         else if (l.id == completedLevel.id + 1) l.copy(isLocked = false)
                                         else l
                                     }

@@ -6,10 +6,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.fillwordsmax.model.Level
 import com.example.fillwordsmax.model.LevelCategory
@@ -81,7 +83,22 @@ fun LevelCard(
                     )
                 }
             }
-            if (level.isLocked) {
+            if (level.isCompleted) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        repeat(3) { i ->
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.Star,
+                                contentDescription = "Звезда",
+                                tint = if (i < level.stars) Color.Yellow else Color.Gray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    Text("Очки: ${level.score}", style = MaterialTheme.typography.bodySmall)
+                    Text("Время: ${level.time}c", style = MaterialTheme.typography.bodySmall)
+                }
+            } else if (level.isLocked) {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = "Заблокировано",
