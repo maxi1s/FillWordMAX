@@ -133,7 +133,7 @@ fun GameField(
             text = "Время: ${elapsedTime}s",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(top = 10.dp)
         )
         // Game grid
         Column(
@@ -248,17 +248,18 @@ fun GameCell(
                 color = when {
                     isFound -> Color.Green.copy(alpha = 0.3f)
                     isSelected -> Color.Blue.copy(alpha = 0.3f)
-                    else -> Color.White
+                    else -> Color.Transparent
                 }
             )
-            .border(1.dp, Color.Black)
+            .border(1.dp, MaterialTheme.colorScheme.outline)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = cell.letter.toString(),
             fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -278,14 +279,14 @@ fun WordItem(
         Text(
             text = word.text,
             fontSize = 16.sp,
-            color = if (isFound) Color.Green else Color.Black,
+            color = if (isFound) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         if (isFound) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = "Found",
-                tint = Color.Green
+                tint = MaterialTheme.colorScheme.primary
             )
         }
     }
