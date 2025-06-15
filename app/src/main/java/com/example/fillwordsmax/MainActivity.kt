@@ -37,6 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 
 class MainActivity : ComponentActivity() {
     private lateinit var authManager: AuthManager
@@ -61,19 +64,19 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(authManager: AuthManager) {
     val navController = rememberNavController()
-    var isAuthenticated by remember { mutableStateOf(authManager.isUserSignedIn()) }
+    var isAuthenticated by remember { mutableStateOf<Boolean?>(null) } // null = не авторизирован
     var categories by remember { mutableStateOf(createInitialCategories()) }
+    var isProgressLoaded by remember { mutableStateOf(false) }
 
+    // Проверяем состояние авторизации при запуске
     LaunchedEffect(Unit) {
-        if (isAuthenticated) {
-            navController.navigate("categories") {
-                popUpTo("auth") { inclusive = true }
-            }
-        }
+        isAuthenticated = authManager.isUserSignedIn()
     }
 
     LaunchedEffect(isAuthenticated) {
-        if (isAuthenticated) {
+        if (isAuthenticated == true) {
+            isProgressLoaded = false
+            categories = createInitialCategories()
             ProgressRepository.loadProgress { progressMap ->
                 categories = categories.map { category ->
                     val updatedLevels = category.levels.map { level ->
@@ -97,110 +100,235 @@ fun AppNavigation(authManager: AuthManager) {
 
                     category.copy(levels = updatedLevels)
                 }
+                isProgressLoaded = true
             }
         }
     }
 
-    NavHost(navController = navController, startDestination = "auth") {
-        composable("auth") {
-            AuthScreen(
-                authManager = authManager,
-                onAuthSuccess = {
-                    isAuthenticated = true
-                    navController.navigate("categories") {
-                        popUpTo("auth") { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable("categories") {
-            CategoriesScreen(
-                categories = categories,
-                onCategoryClick = { category: LevelCategory ->
-                    navController.navigate("levels/${category.id}")
-                },
-                onSignOut = {
-                    authManager.signOut()
-                    isAuthenticated = false
-                    categories = createInitialCategories()
-                    navController.navigate("auth") {
-                        popUpTo("categories") { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable(
-            route = "levels/{categoryId}",
-            arguments = listOf(
-                navArgument("categoryId") { type = NavType.IntType }
-            )
-        ) { backStackEntry ->
-            val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 1
-            val category = categories.find { it.id == categoryId }
-            category?.let {
-                LevelsScreen(
-                    category = it,
-                    onLevelClick = { level ->
-                        navController.navigate("game/${level.id}")
-                    },
-                    onBackClick = {
-                        navController.popBackStack()
-                    }
-                )
+    when (isAuthenticated) {
+        null -> {
+            // Показываем экран загрузки
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
         }
-        composable(
-            route = "game/{levelId}",
-            arguments = listOf(
-                navArgument("levelId") { type = NavType.IntType }
-            )
-        ) { backStackEntry ->
-            val levelId = backStackEntry.arguments?.getInt("levelId") ?: 1
-            // Находим категорию, к которой принадлежит выбранный уровень
-            val selectedCategory = categories.find { category ->
-                category.levels.any { it.id == levelId }
-            }
-            val level = selectedCategory?.levels?.find { it.id == levelId }
-            if (level != null) {
-                GameScreen(
-                    navController = navController,
-                    level = level,
-                    onLevelCompleted = { completedLevel ->
-                        val maxScore = 100
-                        val score = when {
-                            completedLevel.stars == 3 -> maxScore
-                            completedLevel.stars == 2 -> (maxScore * 0.7).toInt()
-                            else -> (maxScore * 0.4).toInt()
-                        }
-                        // Сохраняем прогресс в облако
-                        ProgressRepository.saveLevelProgress(
-                            levelId = completedLevel.id,
-                            isCompleted = true,
-                            isLocked = false, // или нужное значение
-                            score = score,
-                            time = completedLevel.time,
-                            stars = completedLevel.stars
+        true -> {
+            if (!isProgressLoaded) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                NavHost(navController, startDestination = "categories") {
+                    composable("auth") {
+                        AuthScreen(
+                            authManager = authManager,
+                            onAuthSuccess = {
+                                isAuthenticated = true
+                                // isProgressLoaded сбросится в LaunchedEffect
+                                navController.navigate("categories") {
+                                    popUpTo("auth") { inclusive = true }
+                                }
+                            }
                         )
-                        // Обновляем локально
-                        categories = categories.map { category ->
-                            if (category.levels.any { it.id == completedLevel.id }) {
-                                category.copy(
-                                    levels = category.levels.map { l ->
-                                        if (l.id == completedLevel.id) l.copy(
-                                            isCompleted = true,
-                                            score = completedLevel.score,
-                                            time = completedLevel.time,
-                                            stars = completedLevel.stars
-                                        )
-                                        else if (l.id == completedLevel.id + 1) l.copy(isLocked = false)
-                                        else l
-                                    }
-                                )
-                            } else category
-                        }
-                        navController.popBackStack()
                     }
-                )
+                    composable("categories") {
+                        CategoriesScreen(
+                            categories = categories,
+                            onCategoryClick = { category: LevelCategory ->
+                                navController.navigate("levels/${category.id}")
+                            },
+                            onSignOut = {
+                                authManager.signOut()
+                                isAuthenticated = false
+                                categories = createInitialCategories()
+                                isProgressLoaded = false
+                                navController.navigate("auth") {
+                                    popUpTo("categories") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+                    composable(
+                        route = "levels/{categoryId}",
+                        arguments = listOf(
+                            navArgument("categoryId") { type = NavType.IntType }
+                        )
+                    ) { backStackEntry ->
+                        val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 1
+                        val category = categories.find { it.id == categoryId }
+                        category?.let {
+                            LevelsScreen(
+                                category = it,
+                                onLevelClick = { level ->
+                                    navController.navigate("game/${level.id}")
+                                },
+                                onBackClick = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+                    }
+                    composable(
+                        route = "game/{levelId}",
+                        arguments = listOf(
+                            navArgument("levelId") { type = NavType.IntType }
+                        )
+                    ) { backStackEntry ->
+                        val levelId = backStackEntry.arguments?.getInt("levelId") ?: 1
+                        // Находим категорию, к которой принадлежит выбранный уровень
+                        val selectedCategory = categories.find { category ->
+                            category.levels.any { it.id == levelId }
+                        }
+                        val level = selectedCategory?.levels?.find { it.id == levelId }
+                        if (level != null) {
+                            GameScreen(
+                                navController = navController,
+                                level = level,
+                                onLevelCompleted = { completedLevel ->
+                                    val maxScore = 100
+                                    val score = when {
+                                        completedLevel.stars == 3 -> maxScore
+                                        completedLevel.stars == 2 -> (maxScore * 0.7).toInt()
+                                        else -> (maxScore * 0.4).toInt()
+                                    }
+                                    // Сохраняем прогресс в облако
+                                    ProgressRepository.saveLevelProgress(
+                                        levelId = completedLevel.id,
+                                        isCompleted = true,
+                                        isLocked = false, // или нужное значение
+                                        score = score,
+                                        time = completedLevel.time,
+                                        stars = completedLevel.stars
+                                    )
+                                    // Обновляем локально
+                                    categories = categories.map { category ->
+                                        if (category.levels.any { it.id == completedLevel.id }) {
+                                            category.copy(
+                                                levels = category.levels.map { l ->
+                                                    if (l.id == completedLevel.id) l.copy(
+                                                        isCompleted = true,
+                                                        score = completedLevel.score,
+                                                        time = completedLevel.time,
+                                                        stars = completedLevel.stars
+                                                    )
+                                                    else if (l.id == completedLevel.id + 1) l.copy(isLocked = false)
+                                                    else l
+                                                }
+                                            )
+                                        } else category
+                                    }
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        false -> {
+            NavHost(navController, startDestination = "auth") {
+                composable("auth") {
+                    AuthScreen(
+                        authManager = authManager,
+                        onAuthSuccess = {
+                            isAuthenticated = true
+                            navController.navigate("categories") {
+                                popUpTo("auth") { inclusive = true }
+                            }
+                        }
+                    )
+                }
+                composable("categories") {
+                    CategoriesScreen(
+                        categories = categories,
+                        onCategoryClick = { category: LevelCategory ->
+                            navController.navigate("levels/${category.id}")
+                        },
+                        onSignOut = {
+                            authManager.signOut()
+                            isAuthenticated = false
+                            categories = createInitialCategories()
+                            isProgressLoaded = false
+                            navController.navigate("auth") {
+                                popUpTo("categories") { inclusive = true }
+                            }
+                        }
+                    )
+                }
+                composable(
+                    route = "levels/{categoryId}",
+                    arguments = listOf(
+                        navArgument("categoryId") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: 1
+                    val category = categories.find { it.id == categoryId }
+                    category?.let {
+                        LevelsScreen(
+                            category = it,
+                            onLevelClick = { level ->
+                                navController.navigate("game/${level.id}")
+                            },
+                            onBackClick = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                }
+                composable(
+                    route = "game/{levelId}",
+                    arguments = listOf(
+                        navArgument("levelId") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val levelId = backStackEntry.arguments?.getInt("levelId") ?: 1
+                    // Находим категорию, к которой принадлежит выбранный уровень
+                    val selectedCategory = categories.find { category ->
+                        category.levels.any { it.id == levelId }
+                    }
+                    val level = selectedCategory?.levels?.find { it.id == levelId }
+                    if (level != null) {
+                        GameScreen(
+                            navController = navController,
+                            level = level,
+                            onLevelCompleted = { completedLevel ->
+                                val maxScore = 100
+                                val score = when {
+                                    completedLevel.stars == 3 -> maxScore
+                                    completedLevel.stars == 2 -> (maxScore * 0.7).toInt()
+                                    else -> (maxScore * 0.4).toInt()
+                                }
+                                // Сохраняем прогресс в облако
+                                ProgressRepository.saveLevelProgress(
+                                    levelId = completedLevel.id,
+                                    isCompleted = true,
+                                    isLocked = false, // или нужное значение
+                                    score = score,
+                                    time = completedLevel.time,
+                                    stars = completedLevel.stars
+                                )
+                                // Обновляем локально
+                                categories = categories.map { category ->
+                                    if (category.levels.any { it.id == completedLevel.id }) {
+                                        category.copy(
+                                            levels = category.levels.map { l ->
+                                                if (l.id == completedLevel.id) l.copy(
+                                                    isCompleted = true,
+                                                    score = completedLevel.score,
+                                                    time = completedLevel.time,
+                                                    stars = completedLevel.stars
+                                                )
+                                                else if (l.id == completedLevel.id + 1) l.copy(isLocked = false)
+                                                else l
+                                            }
+                                        )
+                                    } else category
+                                }
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                }
             }
         }
     }

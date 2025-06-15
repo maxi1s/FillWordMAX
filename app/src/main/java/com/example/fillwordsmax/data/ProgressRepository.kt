@@ -46,7 +46,10 @@ object ProgressRepository {
                     }
                     onResult(progress)
                 }
-        }
+                .addOnFailureListener {
+                    onResult(emptyMap())
+                }
+        } ?: onResult(emptyMap())
     }
 }
 
