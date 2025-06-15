@@ -34,6 +34,12 @@ import com.example.fillwordsmax.data.GameData
 import com.example.fillwordsmax.data.ProgressRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.platform.LocalDensity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,6 +96,7 @@ fun GameField(
     var gameField by remember { mutableStateOf<GameField?>(null) }
     var selectedCells by remember { mutableStateOf<List<Cell>>(emptyList()) }
     var foundWords by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var foundWordPaths by remember { mutableStateOf<Map<String, List<Cell>>>(emptyMap()) }
     var elapsedTime by remember { mutableStateOf(0L) }
     var isRunning by remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
@@ -111,6 +118,7 @@ fun GameField(
         val foundWord = checkWord(updatedSelection, gameField!!)
         if (foundWord != null) {
             foundWords = foundWords + foundWord
+            foundWordPaths = foundWordPaths + (foundWord to updatedSelection)
             selectedCells = emptyList()
         }
     }
@@ -121,6 +129,9 @@ fun GameField(
         time < 60 -> 2
         else -> 1
     }
+
+    val cellSize = 40.dp
+    val cellSizePx = with(LocalDensity.current) { cellSize.toPx() }
 
     Column(
         modifier = Modifier
@@ -135,21 +146,46 @@ fun GameField(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 10.dp)
         )
-        // Game grid
-        Column(
+        // Game grid с Canvas
+        Box(
             modifier = Modifier
                 .padding(8.dp)
                 .border(2.dp, Color.Black)
         ) {
-            gameField?.grid?.forEach { row ->
-                Row {
-                    row.forEach { cell ->
-                        val isSelected = selectedCells.any { it.x == cell.x && it.y == cell.y }
-                        GameCell(
-                            cell = cell,
-                            isSelected = isSelected,
-                            isFound = cell.isFound,
-                            onClick = { onCellSelected(cell) }
+            Column {
+                gameField?.grid?.forEach { row ->
+                    Row {
+                        row.forEach { cell ->
+                            val isSelected = selectedCells.any { it.x == cell.x && it.y == cell.y }
+                            GameCell(
+                                cell = cell,
+                                isSelected = isSelected,
+                                isFound = cell.isFound,
+                                onClick = { onCellSelected(cell) }
+                            )
+                        }
+                    }
+                }
+            }
+            // Рисуем линии по найденным словам
+            Canvas(modifier = Modifier.matchParentSize()) {
+                foundWordPaths.values.forEach { pathCells ->
+                    if (pathCells.isNotEmpty()) {
+                        val path = Path()
+                        path.moveTo(
+                            pathCells[0].x * cellSizePx + cellSizePx / 2,
+                            pathCells[0].y * cellSizePx + cellSizePx / 2
+                        )
+                        for (i in 1 until pathCells.size) {
+                            path.lineTo(
+                                pathCells[i].x * cellSizePx + cellSizePx / 2,
+                                pathCells[i].y * cellSizePx + cellSizePx / 2
+                            )
+                        }
+                        drawPath(
+                            path = path,
+                            color = Color.Red.copy(alpha = 0.8f),
+                            style = Stroke(width = 6f)
                         )
                     }
                 }
@@ -259,7 +295,8 @@ fun GameCell(
             text = cell.letter.toString(),
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (isFound) 0.8f else 1f),
+            textDecoration = if (isFound) TextDecoration.LineThrough else TextDecoration.None
         )
     }
 }
@@ -279,7 +316,8 @@ fun WordItem(
         Text(
             text = word.text,
             fontSize = 16.sp,
-            color = if (isFound) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            color = if (isFound) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurface,
+            textDecoration = if (isFound) TextDecoration.LineThrough else TextDecoration.None,
             modifier = Modifier.weight(1f)
         )
         if (isFound) {
@@ -374,4 +412,23 @@ fun SettingsDialog(
             }
         }
     )
+}
+
+// Вспомогательная функция для получения пути слова (списка клеток)
+private fun getWordPath(word: Word, grid: List<List<Cell>>): List<Cell> {
+    val path = mutableListOf<Cell>()
+    var x = word.startX
+    var y = word.startY
+    path.add(grid[y][x])
+    for (i in 1 until word.text.length) {
+        if (word.isHorizontal) {
+            x += 1
+        } else {
+            y += 1
+        }
+        if (y in grid.indices && x in grid[y].indices) {
+            path.add(grid[y][x])
+        }
+    }
+    return path
 } 
