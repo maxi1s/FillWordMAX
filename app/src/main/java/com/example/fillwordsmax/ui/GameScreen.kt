@@ -167,7 +167,7 @@ fun GameField(
                     }
                 }
             }
-            // Рисуем линии по найденным словам
+            // Рисуем линии по найденным словам/
             Canvas(modifier = Modifier.matchParentSize()) {
                 foundWordPaths.values.forEach { pathCells ->
                     if (pathCells.isNotEmpty()) {
