@@ -40,6 +40,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.platform.LocalDensity
+import android.app.Activity
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,7 +170,7 @@ fun GameField(
                     }
                 }
             }
-            // Рисуем линии по найденным словам/
+            // Рисуем линии по найденным словам
             Canvas(modifier = Modifier.matchParentSize()) {
                 foundWordPaths.values.forEach { pathCells ->
                     if (pathCells.isNotEmpty()) {
@@ -222,6 +225,44 @@ fun GameField(
                     }
                 }
             }
+        }
+        // Кнопка подсказки с рекламой (перемещена под список слов)
+        val context = LocalContext.current
+        val activity = context as? Activity
+        val rewardedHelper = remember { YandexRewardedHelper(context, "R-M-15419348-1") }
+        Button(
+            onClick = {
+                if (activity != null) {
+                    rewardedHelper.loadAndShow(activity, onReward = {
+                        // После просмотра рекламы — подсказка
+                        val notFoundWord = gameField?.words?.firstOrNull { !foundWords.contains(it.text) }
+                        if (notFoundWord != null) {
+                            val grid = gameField!!.grid
+                            var x = notFoundWord.startX
+                            var y = notFoundWord.startY
+                            for (i in notFoundWord.text.indices) {
+                                val cell = grid[y][x]
+                                if (!cell.isFound) {
+                                    cell.isFound = true
+                                    break
+                                }
+                                if (notFoundWord.isHorizontal) {
+                                    x += 1
+                                } else {
+                                    y += 1
+                                }
+                            }
+                        }
+                    },
+                    onError = { errorMsg ->
+                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                    })
+                }
+            },
+            enabled = gameField?.words?.any { !foundWords.contains(it.text) } == true,
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            Text("Подсказка")
         }
         // Показываем звезды, если уровень завершён
         if (foundWords.size == gameField?.words?.size) {

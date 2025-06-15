@@ -41,6 +41,8 @@ android {
 }
 
 dependencies {
+    //yandexAD
+    implementation("com.yandex.android:mobileads:7.13.0")
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation("com.google.firebase:firebase-analytics-ktx")

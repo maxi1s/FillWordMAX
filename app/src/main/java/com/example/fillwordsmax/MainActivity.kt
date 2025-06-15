@@ -40,13 +40,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import com.yandex.mobile.ads.common.MobileAds
 
 class MainActivity : ComponentActivity() {
     private lateinit var authManager: AuthManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+        MobileAds.initialize(this) {}
         authManager = AuthManager(applicationContext)
         
         // Initialize Google Sign-In
