@@ -372,8 +372,6 @@ fun WordItem(
 }
 
 private fun handleCellSelection(cell: Cell, selectedCells: List<Cell>, gameField: GameField): List<Cell> {
-    if (cell.isFound) return selectedCells
-
     return if (selectedCells.isEmpty()) {
         listOf(cell)
     } else {
