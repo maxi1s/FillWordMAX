@@ -226,15 +226,15 @@ fun GameField(
                 }
             }
         }
-        // Кнопка подсказки с рекламой (перемещена под список слов)
+        // Кнопка подсказки с рекламой 
         val context = LocalContext.current
         val activity = context as? Activity
-        val rewardedHelper = remember { YandexRewardedHelper(context, "R-M-15419348-1") }
+        val rewardedHelper = remember { YandexRewardedHelper(context, "R-M-15419348-1") }// ID рекламного блока, 
         Button(
             onClick = {
                 if (activity != null) {
                     rewardedHelper.loadAndShow(activity, onReward = {
-                        // После просмотра рекламы — подсказка
+                        // После просмотра рекламы — подсказка, букву подсвет
                         val notFoundWord = gameField?.words?.firstOrNull { !foundWords.contains(it.text) }
                         if (notFoundWord != null) {
                             val grid = gameField!!.grid
@@ -264,7 +264,7 @@ fun GameField(
         ) {
             Text("Подсказка")
         }
-        // Показываем звезды, если уровень завершён
+        // Показываем звезды, при завершении
         if (foundWords.size == gameField?.words?.size) {
             isRunning = false
             val stars = calculateStars(elapsedTime)
@@ -274,7 +274,7 @@ fun GameField(
                 2 -> (maxScore * 0.7).toInt()
                 else -> (maxScore * 0.4).toInt()
             }
-            // Сохраняем прогресс
+            // Сохраняем прогресс в облаке
             ProgressRepository.saveLevelProgress(
                 levelId = level.id,
                 isCompleted = true,
@@ -302,7 +302,7 @@ fun GameField(
                     }
                 }
             }
-            // Завершаем уровень через 2 секунды
+            // Завершаем уровень через 2 секунды, чтобы пользователь успел увидеть результат
             LaunchedEffect(Unit) {
                 delay(2000)
                 onLevelCompleted(level.copy(score = score, time = elapsedTime, stars = stars))
@@ -390,7 +390,7 @@ private fun isAdjacent(cell1: Cell, cell2: Cell): Boolean {
 }
 
 private fun checkWord(selectedCells: List<Cell>, gameField: GameField): String? {
-    if (selectedCells.size < 3) return null
+    if (selectedCells.size < 3) return null // слово мин 3 буквы
 
     val word = selectedCells.joinToString("") { it.letter.toString() }
     return if (gameField.words.any { it.text == word }) word else null
@@ -401,7 +401,7 @@ private fun createGameField(levelId: Int): GameField? {
 }
 
 @Composable
-fun SettingsDialog(
+fun SettingsDialog( //регулятор сложности подсказок
     currentSettings: GameSettings,
     onSettingsChanged: (GameSettings) -> Unit,
     onDismiss: () -> Unit
@@ -453,7 +453,7 @@ fun SettingsDialog(
     )
 }
 
-// Вспомогательная функция для получения пути слова (списка клеток)
+//фун Получение пути слова, для верного зачеркивания, записываем путь и по нему зачерниваем
 private fun getWordPath(word: Word, grid: List<List<Cell>>): List<Cell> {
     val path = mutableListOf<Cell>()
     var x = word.startX

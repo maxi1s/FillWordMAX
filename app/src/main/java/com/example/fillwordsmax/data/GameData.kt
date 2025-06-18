@@ -61,7 +61,7 @@ private fun randomChar(): Char {
     val alphabet = "АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЫЭЮЯ"
     return alphabet[Random.nextInt(alphabet.length)]
 }
-
+//Генератор рандомного игрового поля
 private fun generateGameField(id: Int, size: Int, wordsList: List<String>): GameField {
     val grid = Array(size) { Array(size) { '_' } }
     val used = Array(size) { BooleanArray(size) { false } }

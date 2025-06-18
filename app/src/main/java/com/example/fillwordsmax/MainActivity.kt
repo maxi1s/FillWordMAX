@@ -106,7 +106,7 @@ fun AppNavigation(authManager: AuthManager) {
         }
     }
 
-    when (isAuthenticated) {
+    when (isAuthenticated) { // Проверка на авторизацию
         null -> {
             // Показываем экран загрузки
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -201,7 +201,7 @@ fun AppNavigation(authManager: AuthManager) {
                                         time = completedLevel.time,
                                         stars = completedLevel.stars
                                     )
-                                    // Обновляем локально
+                                    // Обновляем локально, (хранение происходит и локально в том числе)
                                     categories = categories.map { category ->
                                         if (category.levels.any { it.id == completedLevel.id }) {
                                             category.copy(
@@ -283,7 +283,7 @@ fun AppNavigation(authManager: AuthManager) {
                     )
                 ) { backStackEntry ->
                     val levelId = backStackEntry.arguments?.getInt("levelId") ?: 1
-                    // Находим категорию, к которой принадлежит выбранный уровень
+                    // Находим категорию к которой принадлежит выбр уровень
                     val selectedCategory = categories.find { category ->
                         category.levels.any { it.id == levelId }
                     }
@@ -303,7 +303,7 @@ fun AppNavigation(authManager: AuthManager) {
                                 ProgressRepository.saveLevelProgress(
                                     levelId = completedLevel.id,
                                     isCompleted = true,
-                                    isLocked = false, // или нужное значение
+                                    isLocked = false,
                                     score = score,
                                     time = completedLevel.time,
                                     stars = completedLevel.stars
@@ -334,7 +334,7 @@ fun AppNavigation(authManager: AuthManager) {
         }
     }
 }
-
+//Инциализация уровней и категорий, уровни(id) в data/GameData
 private fun createInitialCategories(): List<LevelCategory> {
     return listOf(
         LevelCategory(
